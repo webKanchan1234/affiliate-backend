@@ -1,2 +1,10 @@
-/mvnw text eol=lf
+# Set default behavior for all files
+* text=auto
+
+# Explicitly handle shell scripts (like mvnw)
+*.sh text eol=lf
 *.cmd text eol=crlf
+
+# Binary files should not be modified
+*.png binary
+*.jpg binary
