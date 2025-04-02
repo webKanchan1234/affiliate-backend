@@ -1,0 +1,194 @@
+implement role like enum
+
+we use an interface instead of a class for UserRepository because Spring Boot automatically provides the implementation at runtime. Here’s why:
+Spring Data JPA Provides Implementation
+Abstraction & Loose Coupling
+Dynamic Query Methods
+Flexibility with Multiple Implementations
+
+
+Why Not Use a Class for UserRepository
+If you use a class, you must manually implement all methods that JpaRepository provides
+@Repository
+public class UserRepository {  // ❌ Class instead of Interface
+
+    @Autowired
+    private EntityManager entityManager;
+
+    public UserEntity save(UserEntity user) {  // ❌ Manually implement
+        entityManager.persist(user);
+        return user;
+    }
+
+    public UserEntity findById(Long id) {  // ❌ Manually implement
+        return entityManager.find(UserEntity.class, id);
+    }
+
+    public void deleteById(Long id) {  // ❌ Manually implement
+        UserEntity user = findById(id);
+        if (user != null) {
+            entityManager.remove(user);
+        }
+    }
+}
+
+No Built-in Query Methods
+Less Maintainability & Flexibility  means any update came not applied automatically
+
+
+
+----------------------------
+public interface UserServices
+public class UserServiceImpl implements UserServices
+
+here also used interface but in impl class use implements instead of extends
+
+Why implements Instead of extends in UserServiceImpl?
+In Java, interfaces and classes are fundamentally different:
+
+Interfaces define a contract (methods without implementation).
+Classes provide actual implementations.
+implements is used when a class provides the implementation of an interface.
+extends is used when a class inherits from another class
+
+in above example
+✅ implements means UserServiceImpl is providing the actual implementation of UserServices.
+
+Using a Class (extends)
+✅ extends means UserServiceImpl inherits log() from BaseService.
+
+
+✅ Use implements when a class implements an interface (UserServiceImpl implements UserServices).
+✅ Use extends when a class inherits from another class.
+
+
+3. Why Use implements for Services?
+Loose Coupling: Separates interface (contract) from implementation.
+Easier Testing: You can swap implementations (e.g., mock the service in tests).
+Dependency Injection: Spring can inject different implementations if needed.
+Multiple Implementations: Allows creating multiple service implementations for different cases.
+
+
+----------------------------
+
+----------------------------
+in modelMapper need to maintain version, but not for others
+
+Spring Boot uses a parent POM (spring-boot-starter-parent), which automatically manages versions for many dependencies
+Spring Boot knows which version to use because spring-boot-starter-parent defines it
+
+Dependencies That Require a Version (modelMapper Case)
+If a dependency is not included in the parent POM’s dependency management, you must specify the version manually.
+
+Spring Boot does not include modelMapper in its dependency management, so you must specify the version.
+
+
+To centralize version control, use dependencyManagement. (?)
+
+ModelMapper
+MapStruct
+
+
+----------------------------
+
+----------------------------
+Complete Guide to Date & Time in Java
+Class / API	Since	Description
+java.util.Date	Java 1.0	Legacy class for representing dates (without time zones).
+java.util.Calendar	Java 1.1	More powerful than Date, supports time zones and fields manipulation.
+java.text.SimpleDateFormat	Java 1.2	Used for formatting and parsing dates.
+java.time.LocalDate	Java 8	Represents only a date (YYYY-MM-DD), no time.
+java.time.LocalTime	Java 8	Represents only a time (HH:mm:ss), no date.
+java.time.LocalDateTime	Java 8	Represents date and time, no time zone.
+java.time.ZonedDateTime	Java 8	Represents date-time with time zone information.
+java.time.Instant	Java 8	Represents a timestamp (UTC time).
+java.time.format.DateTimeFormatter	Java 8	Formats and parses date-time objects.
+
+Date date = new Date(); // Current date and time
+System.out.println(date) //Default format: Wed Feb 05 06:06:10 UTC 2025
+
+Date date = new Date();
+SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+String formattedDate = formatter.format(date);
+System.out.println(formattedDate); // Output: 2025-02-05 06:06:10
+
+LocalDate today = LocalDate.now();
+System.out.println(today); // Output: 2025-02-05
+LocalTime now = LocalTime.now();
+System.out.println(now); // Output: 06:06:10.329
+
+LocalDateTime now = LocalDateTime.now();
+DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+System.out.println(now.format(formatter)); // Output: 2025-02-05 06:06:10
+
+LocalDateTime now = LocalDateTime.now();
+DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+String formattedDate = now.format(formatter);
+System.out.println(formattedDate); // Output: 05/02/2025 06:06:10
+
+Converting Between Date Formats
+String dateStr = "2025-02-05 06:06:10";
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        LocalDateTime dateTime = LocalDateTime.parse(dateStr, formatter);
+        System.out.println(dateTime); // Output: 2025-02-05T06:06:10
+        
+Convert LocalDateTime to Date
+LocalDateTime localDateTime = LocalDateTime.now();
+        Date date = Date.from(localDateTime.atZone(ZoneId.systemDefault()).toInstant());
+        System.out.println(date); // Output: Wed Feb 05 06:06:10 UTC 2025
+        
+        
+Comparing Dates
+LocalDate date1 = LocalDate.of(2025, 2, 5);
+LocalDate date2 = LocalDate.of(2025, 3, 1);
+
+System.out.println(date1.isBefore(date2)); // Output: true
+System.out.println(date1.isAfter(date2));  // Output: false
+
+
+Adding/Subtracting Time
+LocalDate today = LocalDate.now();
+LocalDate nextWeek = today.plusDays(7);
+LocalDate lastMonth = today.minusMonths(1);
+System.out.println(nextWeek);  // Output: 2025-02-12
+System.out.println(lastMonth); // Output: 2025-01-05
+
+        
+
+----------------------------
+
+----------------------------Security----------------------------
+Spring Security provides authentication, authorization, and security features for Java applications, particularly Spring Boot applications. 
+
+1. Add Spring Security Dependency
+spring-boot-starter-security provides authentication and authorization features.
+spring-boot-starter-web is needed for web-based authentication.
+
+
+2. Configure Security in SecurityConfig Class
+
+Spring Security requires a configuration class to define authentication and authorization rules.
+
+@EnableWebSecurity enables Spring Security.
+@Configuration enable for creating @Bean for SecurityFilterChain
+
+Steps to Implement Spring Security with JWT
+1️⃣ Add required dependencies
+2️⃣ Create the UserEntity and UserRepository
+3️⃣ Implement UserDetailsService
+4️⃣ Create a JWT Utility class for token generation & validation
+5️⃣ Implement JWT Authentication Filter
+6️⃣ Configure Spring Security
+7️⃣ Create AuthController for login & signup
+8️⃣ Secure the application and test
+
+
+
+----------------------------Security----------------------------
+
+Native query vs query
+
+------------------------------------------------
+
+
+------------------------------------------------

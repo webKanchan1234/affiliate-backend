@@ -1,0 +1,7 @@
+1. hard code msg in user delete func
+2. Api response create use in delete user
+3. learn custom function likefindBycat, title, etc
+4. find by catagory name not by id
+5. implement if db base 0 cnt, then automatic add user with credential with the help of commandLineRunner
+
+if post delete then image also delete
