@@ -102,39 +102,42 @@ public class BrandController {
 	/////-------------update start----------------
 	@PutMapping("/{brandId}/category/{categoryId}")
 	@PreAuthorize("hasRole('ADMIN')")
-	public ResponseEntity<BrandDto> updateBrand(@PathVariable("brandId") Long brandId,
-	                                           @RequestParam("brand") String brandJson,
-	                                           @PathVariable("categoryId") Long categoryId,
-	                                           @RequestParam(value = "image", required = false) MultipartFile file) throws IOException {
+	public ResponseEntity<BrandDto> updateBrand(
+	        @PathVariable("brandId") Long brandId,
+	        @RequestParam("brand") String brandJson,
+	        @PathVariable("categoryId") Long categoryId,
+	        @RequestParam(value = "image", required = false) MultipartFile file) throws IOException {
+
 	    ObjectMapper objectMapper = new ObjectMapper();
 	    BrandDto brandDto = objectMapper.readValue(brandJson, BrandDto.class);
 
-	    // Fetch existing brand
+	    // Fetch existing brand from DB
 	    BrandDto existingBrand = brandServices.getBrandById(brandId);
+
+	    // Update text fields
 	    existingBrand.setTitle(brandDto.getTitle());
 	    existingBrand.setUrlName(brandDto.getUrlName());
 
-	    // Handle image update if a new file is provided
 	    if (file != null && !file.isEmpty()) {
-	        // Delete the old image
+	        // ✅ New image uploaded → delete old image
 	        deleteOldImage(existingBrand.getImage());
 
-	        // Rename file to avoid duplicates
+	        // ✅ Save new image
 	        String fileName = System.currentTimeMillis() + "_" + StringUtils.cleanPath(file.getOriginalFilename());
 	        Path targetLocation = Paths.get(UPLOAD_DIR, fileName);
-
-	        // Save new file, replacing existing one
 	        Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
 
-	        // Update image URL
 	        String imageUrl = "/uploads/brands/" + fileName;
 	        existingBrand.setImage(imageUrl);
+	    } else {
+	        // ✅ No new image → keep the old image (already set in existingBrand)
 	    }
 
-	    // Save updated brand
+	    // ✅ Update brand in DB
 	    BrandDto updatedBrand = brandServices.updateBrand(brandId, existingBrand, categoryId);
 	    return new ResponseEntity<>(updatedBrand, HttpStatus.OK);
 	}
+
 
 /////-------------update end ----------------
 	

@@ -6,7 +6,9 @@ import com.blogdirectorio.affiliate.dto.ContactusDto;
 
 public interface ContactusServices {
 
-	public ContactusDto contactUsPost(ContactusDto contact);
+	public String contactUsPost(ContactusDto contact);
 	public List<ContactusDto> allMessages();
 	public String deleteMessage(Long id);
+	public String contactEmail(String name, String email, String message);
+	
 }

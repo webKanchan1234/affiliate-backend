@@ -5,6 +5,7 @@ import java.util.List;
 import com.blogdirectorio.affiliate.entity.ReviewEntity;
 
 import jakarta.persistence.ManyToOne;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -13,8 +14,10 @@ import lombok.Setter;
 public class ProductDto {
 
 	private Long productId;
+	@NotBlank(message = "Product name is required")
 	private String name;
 	private String companyName;
+	@NotBlank(message = "Model name is required")
 	private String modelName;
 	private String color;
 	private String price;

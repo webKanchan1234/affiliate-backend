@@ -1,10 +1,12 @@
 package com.blogdirectorio.affiliate.entity;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
@@ -20,6 +22,8 @@ public class SellerEntity {
     private Long sellerId;
     private String name;
     private String logo;
+    @Lob
+    @Column(columnDefinition = "LONGTEXT")
     private String link;
     
 }

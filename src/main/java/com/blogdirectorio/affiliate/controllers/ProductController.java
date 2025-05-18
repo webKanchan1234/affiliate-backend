@@ -7,7 +7,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -24,15 +27,24 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.blogdirectorio.affiliate.dto.ProductDto;
 import com.blogdirectorio.affiliate.entity.ProductEntity;
+import com.blogdirectorio.affiliate.exceptions.CustomUnknownPropertyHandler;
 import com.blogdirectorio.affiliate.payloads.ApiResponse;
 import com.blogdirectorio.affiliate.payloads.PostResponse;
 import com.blogdirectorio.affiliate.services.ProductServices;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 
+import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Valid;
+import jakarta.validation.Validator;
 
 @RestController
 @RequestMapping("/v1/api/products")
@@ -43,51 +55,83 @@ public class ProductController {
 	@Autowired
 	private ProductServices productServices;
 	
+	@Autowired
+	private Validator validator; 
+	
 
 //	------------------------create product-----------------
 	@PostMapping("/post/category/{categoryId}/brand/{brandId}")
 	@PreAuthorize("hasRole('ADMIN')")
-	public ResponseEntity<ProductDto> productPost(@RequestParam("product") String productJson,
-			@PathVariable("categoryId") Long categoryId,
-			@PathVariable("brandId") Long brandId,
-			@RequestParam(value="images", required = false) List<MultipartFile> files)
-			throws IOException {
-		
-		// Parse the JSON request into a ProductDto object
-		ObjectMapper objectMapper = new ObjectMapper();
-		ProductDto product = objectMapper.readValue(productJson, ProductDto.class);
+	public ResponseEntity<?> productPost(
+	        @RequestParam("product") String productJson,
+	        @PathVariable("categoryId") Long categoryId,
+	        @PathVariable("brandId") Long brandId,
+	        @RequestParam(value = "images", required = false) List<MultipartFile> files) {
 
-		// Ensure the uploads folder exists
-		File uploadDirectory = new File(UPLOAD_DIR);
-		if (!uploadDirectory.exists()) {
-			uploadDirectory.mkdirs(); // Create the uploads directory if it doesn't exist
-		}
+	    try {
+	    	ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
-		List<String> imageUrls = new ArrayList<>();
+            CustomUnknownPropertyHandler unknownHandler = new CustomUnknownPropertyHandler();
+            objectMapper.addHandler(unknownHandler);
 
-		for (MultipartFile file : files) {
-			if (!file.isEmpty()) {
-				// Rename file to avoid duplicates (Optional)
-				String fileName = System.currentTimeMillis() + "_" + StringUtils.cleanPath(file.getOriginalFilename());
-				Path targetLocation = Paths.get(UPLOAD_DIR, fileName);
+            ProductDto product = objectMapper.readValue(productJson, ProductDto.class);
 
-				// Save file, replacing existing one if needed
-				Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
+            List<String> unknownKeys = unknownHandler.getUnknownProperties();
 
-				// Store image path
-				imageUrls.add("/uploads/products/" + fileName);
-			}
-		}
+            if (!unknownKeys.isEmpty()) {
+                return ResponseEntity.badRequest().body(unknownKeys);
+            }
+	        // ✅ Validate fields using Validator
+	        Set<ConstraintViolation<ProductDto>> violations = validator.validate(product);
+	        if (!violations.isEmpty()) {
+	            List<String> errorMessages = violations.stream()
+	                .map(ConstraintViolation::getMessage)
+	                .collect(Collectors.toList());
+	            return ResponseEntity.badRequest().body(errorMessages);
+	        }
 
-		// Set image URLs
-		product.setImageUrls(imageUrls);
+	        // ✅ Save images
+	        List<String> imageUrls = new ArrayList<>();
+	        if (files != null) {
+	            for (MultipartFile file : files) {
+	                if (!file.isEmpty()) {
+	                    String fileName = System.currentTimeMillis() + "_" + StringUtils.cleanPath(file.getOriginalFilename());
+	                    Path targetLocation = Paths.get(UPLOAD_DIR, fileName);
+	                    Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
+	                    imageUrls.add("/uploads/products/" + fileName);
+	                }
+	            }
+	        }
 
-		// Save product
-		ProductDto mob = this.productServices.createPost(product, categoryId,brandId);
+	        product.setImageUrls(imageUrls);
 
-		return new ResponseEntity<>(mob, HttpStatus.CREATED);
+	        ProductDto saved = productServices.createPost(product, categoryId, brandId);
+	        return ResponseEntity.status(HttpStatus.CREATED).body(saved);
 
+	    } catch (UnrecognizedPropertyException e) {
+	        // ✅ Collect unknown properties in a list
+	        List<String> unknownProperties = Collections.singletonList("Unknown JSON key: " + e.getPropertyName());
+	        return ResponseEntity.badRequest().body(unknownProperties);
+	    } catch (JsonMappingException e) {
+	        // ✅ Collect all unrecognized fields
+	        List<String> unknownKeys = new ArrayList<>();
+	        for (JsonMappingException.Reference ref : e.getPath()) {
+	            if (ref.getFieldName() != null) {
+	                unknownKeys.add("Invalid field: " + ref.getFieldName());
+	            }
+	        }
+	        return ResponseEntity.badRequest().body(unknownKeys);
+	    } catch (JsonProcessingException e) {
+	        return ResponseEntity.badRequest().body(Collections.singletonList("Invalid JSON format: " + e.getOriginalMessage()));
+	    } catch (IOException e) {
+	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Collections.singletonList("File error: " + e.getMessage()));
+	    } catch (Exception e) {
+	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Collections.singletonList("Unexpected error: " + e.getMessage()));
+	    }
 	}
+
+
 	
 //	------------------------create product end-----------------
 	
@@ -144,42 +188,39 @@ public class ProductController {
 	    ObjectMapper objectMapper = new ObjectMapper();
 	    ProductDto updatedProduct = objectMapper.readValue(productJson, ProductDto.class);
 
-	    // Fetch existing product
+	    // Fetch existing product from DB
 	    ProductDto existingProduct = productServices.getProductDetails(productId);
-
-	    // Delete old images
-	    deleteOldImages(existingProduct.getImageUrls());
 
 	    List<String> imageUrls = new ArrayList<>();
 
-	    if (files != null && !files.isEmpty()) {
-	        // Ensure the uploads folder exists
+	    if (files != null && !files.isEmpty() && files.stream().anyMatch(file -> !file.isEmpty())) {
+	        // ✅ New images uploaded → Delete old images
+	        deleteOldImages(existingProduct.getImageUrls());
+
+	        // ✅ Ensure uploads folder exists
 	        File uploadDirectory = new File(UPLOAD_DIR);
 	        if (!uploadDirectory.exists()) {
 	            uploadDirectory.mkdirs();
 	        }
 
+	        // ✅ Save new images
 	        for (MultipartFile file : files) {
 	            if (!file.isEmpty()) {
-	                // Rename file to avoid duplicates (Optional)
 	                String fileName = System.currentTimeMillis() + "_" + StringUtils.cleanPath(file.getOriginalFilename());
 	                Path targetLocation = Paths.get(UPLOAD_DIR, fileName);
-
-	                // Save file
 	                Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
-
-	                // Store image path
 	                imageUrls.add("/uploads/products/" + fileName);
 	            }
 	        }
+
+	        updatedProduct.setImageUrls(imageUrls); // Set new image URLs
+	    } else {
+	        // ✅ No new image uploaded → retain old ones
+	        updatedProduct.setImageUrls(existingProduct.getImageUrls());
 	    }
 
-	    // Set updated fields
-	    updatedProduct.setImageUrls(imageUrls); // Update images
-
-	    // Update the product in the database
-	    ProductDto updated = productServices.updateProduct(productId, updatedProduct, categoryId,brandId);
-
+	    // ✅ Proceed with updating the product
+	    ProductDto updated = productServices.updateProduct(productId, updatedProduct, categoryId, brandId);
 	    return new ResponseEntity<>(updated, HttpStatus.OK);
 	}
 	

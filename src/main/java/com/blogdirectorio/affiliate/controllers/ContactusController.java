@@ -26,8 +26,9 @@ public class ContactusController {
 	private ContactusServices contactusServices;
 	
 	@PostMapping("/post")
-	public ResponseEntity<ContactusDto> contactUs(@RequestBody ContactusDto contact){
-		ContactusDto msg=this.contactusServices.contactUsPost(contact);
+	public ResponseEntity<String> contactUs(@RequestBody ContactusDto contact){
+		String msg=this.contactusServices.contactUsPost(contact);
+		
 		return new ResponseEntity<>(msg,HttpStatus.CREATED);
 	}
 	
@@ -44,5 +45,12 @@ public class ContactusController {
 		String msg=this.contactusServices.deleteMessage(id);
 		ApiResponse res=new ApiResponse(msg,true);
 		return new ResponseEntity<>(res,HttpStatus.OK);
+	}
+	
+	@PostMapping("/email")
+	public ResponseEntity<ApiResponse> contactUsOnEmail(@RequestBody ContactusDto contact){
+		String msg=this.contactusServices.contactEmail(contact.getName(),contact.getEmail(),contact.getMessage());
+		ApiResponse res=new ApiResponse(msg,true);
+		return new ResponseEntity<>(res,HttpStatus.CREATED);
 	}
 }
