@@ -42,12 +42,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Valid;
 import jakarta.validation.Validator;
 
 @RestController
 @RequestMapping("/v1/api/products")
+@Tag(name = "Product Controller")
 public class ProductController {
 
 	private static final String UPLOAD_DIR = System.getProperty("user.dir") + "/uploads/products";

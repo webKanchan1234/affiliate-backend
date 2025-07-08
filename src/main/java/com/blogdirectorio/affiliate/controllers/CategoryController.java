@@ -31,10 +31,12 @@ import com.blogdirectorio.affiliate.payloads.ApiResponse;
 import com.blogdirectorio.affiliate.services.CategoryServices;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/v1/api/categories")
+@Tag(name = "Category Controller")
 public class CategoryController {
 
 	@Autowired

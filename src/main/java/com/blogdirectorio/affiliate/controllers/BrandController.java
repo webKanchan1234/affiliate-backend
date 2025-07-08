@@ -29,8 +29,11 @@ import com.blogdirectorio.affiliate.payloads.ApiResponse;
 import com.blogdirectorio.affiliate.services.BrandServices;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 @RestController
 @RequestMapping("/v1/api/brands")
+@Tag(name = "Brand Controller")
 public class BrandController {
 
 	@Autowired

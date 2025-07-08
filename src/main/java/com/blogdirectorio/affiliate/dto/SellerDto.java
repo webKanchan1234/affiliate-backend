@@ -11,4 +11,5 @@ public class SellerDto {
 	private String name;
 	private String logo;
 	private String link;
+	private String price;
 }

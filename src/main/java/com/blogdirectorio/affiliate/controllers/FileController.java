@@ -11,8 +11,11 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 @RestController
 @RequestMapping("/uploads")
+@Tag(name = "File Controller")
 public class FileController {
 
 	private static final String UPLOAD_DIR = System.getProperty("user.dir") + "/uploads/";

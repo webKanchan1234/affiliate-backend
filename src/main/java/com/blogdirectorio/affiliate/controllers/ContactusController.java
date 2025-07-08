@@ -18,8 +18,11 @@ import com.blogdirectorio.affiliate.dto.ContactusDto;
 import com.blogdirectorio.affiliate.payloads.ApiResponse;
 import com.blogdirectorio.affiliate.services.ContactusServices;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 @RestController
 @RequestMapping("/v1/api/contactus")
+@Tag(name = "Contact Controller")
 public class ContactusController {
 
 	@Autowired

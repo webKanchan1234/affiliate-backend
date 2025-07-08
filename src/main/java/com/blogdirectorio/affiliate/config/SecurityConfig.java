@@ -17,6 +17,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.cors.CorsConfigurationSource;
 
 import com.blogdirectorio.affiliate.security.CustomAccessDeniedHandler;
@@ -27,6 +28,7 @@ import com.blogdirectorio.affiliate.security.JwtAuthenticationFilter;
 import java.util.Arrays;
 @Configuration
 @EnableWebSecurity
+@EnableWebMvc
 @EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
@@ -48,13 +50,35 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource())) // Enable CORS
             .csrf(csrf -> csrf.disable()) // Disable CSRF
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/v1/api/auth/login", "/v1/api/auth/signup").permitAll()
+            		.requestMatchers(
+                            "/v1/api/auth/**",
+                            "/v3/api-docs/**",
+                            "/swagger-ui/**",
+                            "/swagger-ui.html",
+                            "/swagger-resources/**",
+                            "/webjars/**",
+                            "/configuration/ui",
+                            "/configuration/security",
+                            "/v1/api/public/**",
+                            "/v1/api/products/**",
+                            "/v1/api/affiliate/**",
+                            "/uploads/**",
+                            "/health",
+                            "/v1/api/categories/**",
+                            "/v1/api/brands/**",
+                            "/v1/api/reviews/**",
+                            "/v1/api/contactus/**"
+                        ).permitAll()
                 .requestMatchers("/v1/api/public/**", "/v1/api/products/**","/v1/api/affiliate/**", "/uploads/**","/health").permitAll()
                 .requestMatchers("/v1/api/categories/**", "/v1/api/brands/**","/v1/api/reviews/**","/v1/api/contactus/**").permitAll()
                 .requestMatchers("/v1/api/user/**").hasAnyRole("USER", "ADMIN")
                 .requestMatchers("/v1/api/admin/**").hasRole("ADMIN")
+                
                 .anyRequest().authenticated()
+                
             )
+            
+            
             .exceptionHandling(exception -> exception
                     .authenticationEntryPoint(jwtAuthenticationEntryPoint)
                     .accessDeniedHandler(customAccessDeniedHandler)) // Use custom access denied handler

@@ -24,10 +24,12 @@ import com.blogdirectorio.affiliate.repository.UserRepository;
 import com.blogdirectorio.affiliate.security.JwtTokenHelper;
 import com.blogdirectorio.affiliate.services.UserServices;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/v1/api/auth")
+@Tag(name = "Auth Controller")
 public class AuthController {
 	
 	@Autowired

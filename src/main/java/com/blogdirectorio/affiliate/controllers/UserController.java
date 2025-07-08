@@ -32,10 +32,12 @@ import com.blogdirectorio.affiliate.payloads.ApiResponse;
 import com.blogdirectorio.affiliate.services.UserServices;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/v1/api/user")
+@Tag(name = "User Controller")
 public class UserController {
 
 	

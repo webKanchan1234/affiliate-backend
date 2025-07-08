@@ -25,5 +25,6 @@ public class SellerEntity {
     @Lob
     @Column(columnDefinition = "LONGTEXT")
     private String link;
+    private String price;
     
 }

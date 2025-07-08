@@ -24,10 +24,12 @@ import com.blogdirectorio.affiliate.payloads.ApiResponse;
 import com.blogdirectorio.affiliate.services.ReviewServices;
 import com.blogdirectorio.affiliate.services.UserServices;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/v1/api/reviews")
+@Tag(name = "Review Controller")
 public class ReviewController {
 
 	@Autowired

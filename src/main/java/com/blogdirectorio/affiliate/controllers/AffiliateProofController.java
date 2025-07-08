@@ -18,8 +18,11 @@ import org.springframework.web.bind.annotation.RestController;
 import com.blogdirectorio.affiliate.dto.AffiliateProofDto;
 import com.blogdirectorio.affiliate.services.AffiliateProofServices;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 @RestController
 @RequestMapping("/v1/api/affiliate")
+@Tag(name = "Affiliate Proof Controller")
 public class AffiliateProofController {
 
 	@Autowired

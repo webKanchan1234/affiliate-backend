@@ -10,6 +10,9 @@ import org.springframework.web.multipart.MultipartFile;
 import com.blogdirectorio.affiliate.dto.AdminReviewDto;
 import com.blogdirectorio.affiliate.payloads.ApiResponse;
 import com.blogdirectorio.affiliate.services.AdminReviewService;
+
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -22,6 +25,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/v1/api/reviews/admin")
+@Tag(name = "Admin Review Controller")
 public class AdminReviewController {
 
     @Autowired
