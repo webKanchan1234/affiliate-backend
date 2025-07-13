@@ -6,16 +6,13 @@ import org.springframework.web.bind.annotation.*;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
 @RequestMapping("/uploads")
 @Tag(name = "File Controller")
+@CrossOrigin
 public class FileController {
 
 	private static final String UPLOAD_DIR = System.getProperty("user.dir") + "/uploads/";

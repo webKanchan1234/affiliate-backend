@@ -93,10 +93,16 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         CorsConfiguration config = new CorsConfiguration();
 
-        config.setAllowedOrigins(Arrays.asList("http://localhost:3000")); // Allow frontend origin
-        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS")); // Allowed HTTP methods
-        config.setAllowedHeaders(Arrays.asList("*")); // Allow all headers
-        config.setAllowCredentials(true); // Allow credentials
+        config.setAllowedOrigins(Arrays.asList(
+            "http://localhost:3000",
+            "http://affilliate-frontend.s3-website.ap-south-1.amazonaws.com"
+            // If you switch to HTTPS via CloudFront later, also add:
+            // "https://your-cloudfront-domain.amazonaws.com"
+        ));
+
+        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(Arrays.asList("*"));
+        config.setAllowCredentials(true);
 
         source.registerCorsConfiguration("/**", config);
         return source;

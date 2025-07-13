@@ -26,6 +26,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/v1/api/reviews/admin")
 @Tag(name = "Admin Review Controller")
+@CrossOrigin
 public class AdminReviewController {
 
     @Autowired
