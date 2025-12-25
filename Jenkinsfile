@@ -9,6 +9,7 @@ pipeline {
     environment {
         IMAGE_NAME = "affiliate-backend"
         CONTAINER_NAME = "affiliate-backend"
+        DOCKER_CONFIG = "/tmp/jenkins-docker"
     }
 
     stages {
