@@ -33,9 +33,12 @@ import org.springframework.web.server.ResponseStatusException;
 import com.blogdirectorio.affiliate.dto.ProductDto;
 import com.blogdirectorio.affiliate.entity.ProductEntity;
 import com.blogdirectorio.affiliate.exceptions.CustomUnknownPropertyHandler;
+import com.blogdirectorio.affiliate.helper.ProductImage;
 import com.blogdirectorio.affiliate.payloads.ApiResponse;
 import com.blogdirectorio.affiliate.payloads.PostResponse;
 import com.blogdirectorio.affiliate.services.ProductServices;
+import com.blogdirectorio.affiliate.utility.ImageKitService;
+import com.blogdirectorio.affiliate.utility.ImageUploadResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -55,6 +58,9 @@ import jakarta.validation.Validator;
 public class ProductController {
 
 	private static final String UPLOAD_DIR = System.getProperty("user.dir") + "/uploads/products";
+	
+	@Autowired
+	private ImageKitService imageKitService;
 
 	@Autowired
 	private ProductServices productServices;
@@ -96,19 +102,36 @@ public class ProductController {
 	        }
 
 	        // ✅ Save images
-	        List<String> imageUrls = new ArrayList<>();
+//	        List<String> imageUrls = new ArrayList<>();
+//	        if (files != null) {
+//	            for (MultipartFile file : files) {
+//	                if (!file.isEmpty()) {
+//	                    String fileName = System.currentTimeMillis() + "_" + StringUtils.cleanPath(file.getOriginalFilename());
+//	                    Path targetLocation = Paths.get(UPLOAD_DIR, fileName);
+//	                    Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
+//	                    imageUrls.add("/uploads/products/" + fileName);
+//	                }
+//	            }
+//	        }
+	        
+	        List<ProductImage> images = new ArrayList<>();
+
 	        if (files != null) {
 	            for (MultipartFile file : files) {
 	                if (!file.isEmpty()) {
-	                    String fileName = System.currentTimeMillis() + "_" + StringUtils.cleanPath(file.getOriginalFilename());
-	                    Path targetLocation = Paths.get(UPLOAD_DIR, fileName);
-	                    Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
-	                    imageUrls.add("/uploads/products/" + fileName);
+	                    ImageUploadResponse res =
+	                            imageKitService.uploadImage(file, "/products");
+
+	                    ProductImage img = new ProductImage();
+	                    img.setUrl(res.getUrl());
+	                    img.setFileId(res.getFileId());
+
+	                    images.add(img);
 	                }
 	            }
 	        }
 
-	        product.setImageUrls(imageUrls);
+	        product.setImageUrls(images);
 
 	        ProductDto saved = productServices.createPost(product, categoryId, brandId);
 	        return ResponseEntity.status(HttpStatus.CREATED).body(saved);
@@ -195,31 +218,60 @@ public class ProductController {
 	    // Fetch existing product from DB
 	    ProductDto existingProduct = productServices.getProductDetails(productId);
 
-	    List<String> imageUrls = new ArrayList<>();
+//	    List<String> imageUrls = new ArrayList<>();
+//
+//	    if (files != null && !files.isEmpty() && files.stream().anyMatch(file -> !file.isEmpty())) {
+//	        // ✅ New images uploaded → Delete old images
+//	        deleteOldImages(existingProduct.getImageUrls());
+//
+//	        // ✅ Ensure uploads folder exists
+//	        File uploadDirectory = new File(UPLOAD_DIR);
+//	        if (!uploadDirectory.exists()) {
+//	            uploadDirectory.mkdirs();
+//	        }
+//
+//	        // ✅ Save new images
+//	        for (MultipartFile file : files) {
+//	            if (!file.isEmpty()) {
+//	                String fileName = System.currentTimeMillis() + "_" + StringUtils.cleanPath(file.getOriginalFilename());
+//	                Path targetLocation = Paths.get(UPLOAD_DIR, fileName);
+//	                Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
+//	                imageUrls.add("/uploads/products/" + fileName);
+//	            }
+//	        }
+//
+//	        updatedProduct.setImageUrls(imageUrls); // Set new image URLs
+//	    } else {
+//	        // ✅ No new image uploaded → retain old ones
+//	        updatedProduct.setImageUrls(existingProduct.getImageUrls());
+//	    }
+	    
+	    
+	    if (files != null && files.stream().anyMatch(f -> !f.isEmpty())) {
 
-	    if (files != null && !files.isEmpty() && files.stream().anyMatch(file -> !file.isEmpty())) {
-	        // ✅ New images uploaded → Delete old images
-	        deleteOldImages(existingProduct.getImageUrls());
-
-	        // ✅ Ensure uploads folder exists
-	        File uploadDirectory = new File(UPLOAD_DIR);
-	        if (!uploadDirectory.exists()) {
-	            uploadDirectory.mkdirs();
+	        // 🔥 delete old images from ImageKit
+	        for (ProductImage img : existingProduct.getImageUrls()) {
+	            imageKitService.deleteImageByFileId(img.getFileId());
 	        }
 
-	        // ✅ Save new images
+	        // 🔥 upload new images
+	        List<ProductImage> newImages = new ArrayList<>();
+
 	        for (MultipartFile file : files) {
 	            if (!file.isEmpty()) {
-	                String fileName = System.currentTimeMillis() + "_" + StringUtils.cleanPath(file.getOriginalFilename());
-	                Path targetLocation = Paths.get(UPLOAD_DIR, fileName);
-	                Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
-	                imageUrls.add("/uploads/products/" + fileName);
+	                ImageUploadResponse res =
+	                        imageKitService.uploadImage(file, "/products");
+
+	                ProductImage img = new ProductImage();
+	                img.setUrl(res.getUrl());
+	                img.setFileId(res.getFileId());
+
+	                newImages.add(img);
 	            }
 	        }
 
-	        updatedProduct.setImageUrls(imageUrls); // Set new image URLs
+	        updatedProduct.setImageUrls(newImages);
 	    } else {
-	        // ✅ No new image uploaded → retain old ones
 	        updatedProduct.setImageUrls(existingProduct.getImageUrls());
 	    }
 
@@ -241,7 +293,12 @@ public class ProductController {
 	    ProductDto product = productServices.getProductDetails(id);
 
 	    // Delete the product's image files
-	    deleteOldImages(product.getImageUrls());
+//	    deleteOldImages(product.getImageUrls());
+	    // 🔥 delete images from ImageKit
+	    for (ProductImage img : product.getImageUrls()) {
+	        imageKitService.deleteImageByFileId(img.getFileId());
+	    }
+
 
 	    // Delete the product
 	    String msg = productServices.deleteProduct(id);

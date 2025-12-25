@@ -4,6 +4,8 @@ import java.util.List;
 
 import org.springframework.web.multipart.MultipartFile;
 
+import com.blogdirectorio.affiliate.helper.ProductImage;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -45,8 +47,7 @@ public class ProductEntity {
 	
 	
 	@ElementCollection
-    @Column(columnDefinition = "TEXT")
-	private List<String> imageUrls;
+	private List<ProductImage> imageUrls;
 	
 	@ElementCollection
     @Column(columnDefinition = "TEXT")

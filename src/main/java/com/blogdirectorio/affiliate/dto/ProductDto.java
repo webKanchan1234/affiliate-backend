@@ -3,7 +3,9 @@ package com.blogdirectorio.affiliate.dto;
 import java.util.List;
 
 import com.blogdirectorio.affiliate.entity.ReviewEntity;
+import com.blogdirectorio.affiliate.helper.ProductImage;
 
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.ManyToOne;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
@@ -23,7 +25,8 @@ public class ProductDto {
 	private String price;
 	private String subcategory;
 	private String urlName;
-	private List<String> imageUrls;
+	
+	private List<ProductImage> imageUrls;
 	private List<String> specifications;
 	
 	private List<String> pros;

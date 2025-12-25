@@ -13,7 +13,8 @@ public class CategoryDto {
 	private String title;
 	private String urlName;
 	private String description;
-	private String image;
+	private String image;       // CDN URL
+	private String imageFileId;  // ImageKit fileId
 	private List<BrandDto> brands;
 //	private ProductDto Product;
 }

@@ -30,6 +30,8 @@ import com.blogdirectorio.affiliate.dto.BrandDto;
 import com.blogdirectorio.affiliate.dto.CategoryDto;
 import com.blogdirectorio.affiliate.payloads.ApiResponse;
 import com.blogdirectorio.affiliate.services.CategoryServices;
+import com.blogdirectorio.affiliate.utility.ImageKitService;
+import com.blogdirectorio.affiliate.utility.ImageUploadResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -40,11 +42,18 @@ import jakarta.validation.Valid;
 @Tag(name = "Category Controller")
 @CrossOrigin
 public class CategoryController {
+	
+	@Autowired
+	private ImageKitService imageKitService;
 
 	@Autowired
 	private CategoryServices categoryServices;
 
 	private static final String UPLOAD_DIR = System.getProperty("user.dir") + "/uploads/categories";
+	
+	
+	
+//	create category-------------------------------
 
 	@PostMapping("/create")
 	@PreAuthorize("hasRole('ADMIN')")
@@ -53,103 +62,150 @@ public class CategoryController {
 		ObjectMapper objectMapper = new ObjectMapper();
 		CategoryDto category = objectMapper.readValue(categoryJson, CategoryDto.class);
 
-		File uploadDirectory = new File(UPLOAD_DIR);
-		if (!uploadDirectory.exists()) {
-			uploadDirectory.mkdirs(); // Create the uploads directory if it doesn't exist
-		}
-
-		if (!file.isEmpty()) {
-			// Rename file to avoid duplicates (Optional)
-			String fileName = System.currentTimeMillis() + "_" + StringUtils.cleanPath(file.getOriginalFilename());
-			Path targetLocation = Paths.get(UPLOAD_DIR, fileName);
-
-			// Save file, replacing existing one if needed
-			Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
-
-			// Store image path
-			String imageUrl = "/uploads/categories/" + fileName;
-			category.setImage(imageUrl);
+//		File uploadDirectory = new File(UPLOAD_DIR);
+//		if (!uploadDirectory.exists()) {
+//			uploadDirectory.mkdirs(); // Create the uploads directory if it doesn't exist
+//		}
+//
+//		if (!file.isEmpty()) {
+//			// Rename file to avoid duplicates (Optional)
+//			String fileName = System.currentTimeMillis() + "_" + StringUtils.cleanPath(file.getOriginalFilename());
+//			Path targetLocation = Paths.get(UPLOAD_DIR, fileName);
+//
+//			// Save file, replacing existing one if needed
+//			Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
+//
+//			// Store image path
+//			String imageUrl = "/uploads/categories/" + fileName;
+//			category.setImage(imageUrl);
+//		}
+		
+		if (file != null && !file.isEmpty()) {
+		    ImageUploadResponse res = imageKitService.uploadImage(file, "/categories");
+		    category.setImage(res.getUrl());
+		    category.setImageFileId(res.getFileId());
 		}
 		
 		CategoryDto cat=this.categoryServices.createCategory(category);
 
 		return new ResponseEntity<CategoryDto>(cat, HttpStatus.CREATED);
 	}
+	
+	
+	
+	
+	
+	
+//	get all getAllCategories-----------------------------------
 
 	@GetMapping("/")
 	public ResponseEntity<List<CategoryDto>> getAllCategories() {
 		List<CategoryDto> lists = this.categoryServices.getAllCategories();
 		return new ResponseEntity<List<CategoryDto>>(lists, HttpStatus.OK);
 	}
+	
+	
+	
+	
+	
+	
+	
+//	function for getCategory by id
+	
+	
 
 	@GetMapping("/{id}")
 	public ResponseEntity<CategoryDto> getCategory(@PathVariable("id") Long id) {
 		CategoryDto cat = this.categoryServices.getSingleCategory(id);
 		return new ResponseEntity<CategoryDto>(cat, HttpStatus.OK);
 	}
+	
+	
+	
+	
+//	function for deleteCategory by id
+	
+	
+	
+	
 
 	@DeleteMapping("/{id}")
 	@PreAuthorize("hasRole('ADMIN')")
 	public ResponseEntity<ApiResponse> deleteCategory(@PathVariable("id") Long id) throws IOException {
-	    // Fetch the category to get the image URL
-	    CategoryDto category = categoryServices.getSingleCategory(id);
+		CategoryDto category = categoryServices.getSingleCategory(id);
 
-	    // Delete the category's image file
-	    deleteOldImage(category.getImage());
+	    // 🔥 delete from ImageKit CDN
+	    imageKitService.deleteImageByFileId(category.getImageFileId());
 
-	    // Delete the category
+	    // 🔥 delete from DB
 	    String msg = categoryServices.deleteCategory(id);
-	    ApiResponse res = new ApiResponse(msg, true);
-	    return new ResponseEntity<>(res, HttpStatus.OK);
+
+	    return ResponseEntity.ok(new ApiResponse(msg, true));
 	}
+	
+	
+	
+	
+	
+	
+	
 	
 
 	//------------------update category start-------------
 	@PutMapping("/update-category/{categoryId}")
 	@PreAuthorize("hasRole('ADMIN')")
-	public ResponseEntity<CategoryDto> updateCategory(@RequestParam("category") String categoryJson,
-	                                                 @PathVariable("categoryId") Long categoryId,
-	                                                 @RequestParam(value = "image", required = false) MultipartFile file) throws IOException {
+	public ResponseEntity<CategoryDto> updateCategory(
+	        @RequestParam("category") String categoryJson,
+	        @PathVariable Long categoryId,
+	        @RequestParam(value = "image", required = false) MultipartFile file
+	) throws IOException {
+
 	    ObjectMapper objectMapper = new ObjectMapper();
-	    CategoryDto categoryDto = objectMapper.readValue(categoryJson, CategoryDto.class);
+	    CategoryDto incoming = objectMapper.readValue(categoryJson, CategoryDto.class);
 
-	    // Fetch existing category
-	    CategoryDto existingCategory = categoryServices.getSingleCategory(categoryId);
-	    existingCategory.setTitle(categoryDto.getTitle());
-	    existingCategory.setUrlName(categoryDto.getUrlName());
+	    // 1️⃣ Fetch existing category
+	    CategoryDto existing = categoryServices.getSingleCategory(categoryId);
+	    existing.setTitle(incoming.getTitle());
+	    existing.setUrlName(incoming.getUrlName());
 
-	    // Handle image update if a new file is provided
+	    // 2️⃣ If new image uploaded → replace in ImageKit
 	    if (file != null && !file.isEmpty()) {
-	        // Delete the old image
-	        deleteOldImage(existingCategory.getImage());
 
-	        // Rename file to avoid duplicates
-	        String fileName = System.currentTimeMillis() + "_" + StringUtils.cleanPath(file.getOriginalFilename());
-	        Path targetLocation = Paths.get(UPLOAD_DIR, fileName);
+	        // 🔥 delete old image from ImageKit
+	        imageKitService.deleteImageByFileId(existing.getImageFileId());
 
-	        // Save new file, replacing existing one
-	        Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
+	        // 🔥 upload new image
+	        ImageUploadResponse res = imageKitService.uploadImage(file, "/categories");
 
-	        // Update image URL
-	        String imageUrl = "/uploads/categories/" + fileName;
-	        existingCategory.setImage(imageUrl);
+	        existing.setImage(res.getUrl());
+	        existing.setImageFileId(res.getFileId());
 	    }
 
-	    // Save updated category
-	    CategoryDto updatedCategory = categoryServices.updateCategory(categoryId, existingCategory);
-	    return new ResponseEntity<>(updatedCategory, HttpStatus.OK);
+	    // 3️⃣ Save updated category
+	    CategoryDto updated = categoryServices.updateCategory(categoryId, existing);
+
+	    return ResponseEntity.ok(updated);
 	}
+
 	
-	//------------------update category end-------------
 	
-	private void deleteOldImage(String imageUrl) throws IOException {
-	    if (imageUrl != null && !imageUrl.isEmpty()) {
-	        String fileName = imageUrl.substring(imageUrl.lastIndexOf("/") + 1);
-	        Path filePath = Paths.get(UPLOAD_DIR, fileName);
-	        if (Files.exists(filePath)) {
-	            Files.delete(filePath); // Delete the old image file
-	        }
-	    }
-	}
+	
+	
+	
+	
+	
+	
+	
+	//------------------deleteOldImage category-------------
+	
+//	private void deleteOldImage(String imageUrl) throws IOException {
+//	    if (imageUrl != null && !imageUrl.isEmpty()) {
+//	        String fileName = imageUrl.substring(imageUrl.lastIndexOf("/") + 1);
+//	        Path filePath = Paths.get(UPLOAD_DIR, fileName);
+//	        if (Files.exists(filePath)) {
+//	            Files.delete(filePath); // Delete the old image file
+//	        }
+//	    }
+//	}
 
 }

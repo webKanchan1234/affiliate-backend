@@ -31,6 +31,8 @@ import com.blogdirectorio.affiliate.dto.BrandDto;
 import com.blogdirectorio.affiliate.dto.UserDto;
 import com.blogdirectorio.affiliate.payloads.ApiResponse;
 import com.blogdirectorio.affiliate.services.UserServices;
+import com.blogdirectorio.affiliate.utility.ImageKitService;
+import com.blogdirectorio.affiliate.utility.ImageUploadResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -41,6 +43,10 @@ import jakarta.validation.Valid;
 @Tag(name = "User Controller")
 @CrossOrigin
 public class UserController {
+	
+	
+	@Autowired
+	private ImageKitService imageKitService;
 
 	
 	@Autowired
@@ -86,27 +92,40 @@ public class UserController {
 	            ObjectMapper objectMapper = new ObjectMapper();
 	            UserDto user = objectMapper.readValue(userJson, UserDto.class);
 
-	            File uploadDirectory = new File(UPLOAD_DIR);
-	            if (!uploadDirectory.exists()) {
-	                uploadDirectory.mkdirs(); // Create the uploads directory if it doesn't exist
-	            }
+//	            File uploadDirectory = new File(UPLOAD_DIR);
+//	            if (!uploadDirectory.exists()) {
+//	                uploadDirectory.mkdirs(); // Create the uploads directory if it doesn't exist
+//	            }
 
 	            // Fetch the existing user to get the old image URL
 	            UserDto existingUser = userService.userDetails(userDetails.getUsername());
 
-	            // Delete the old image if a new image is provided
-	            if (file != null && !file.isEmpty()) {
-	                deleteOldImage(existingUser.getImage()); // Delete the old image
+//	            // Delete the old image if a new image is provided
+//	            if (file != null && !file.isEmpty()) {
+//	                deleteOldImage(existingUser.getImage()); // Delete the old image
+//
+//	                // Save the new image
+//	                String fileName = System.currentTimeMillis() + "_" + StringUtils.cleanPath(file.getOriginalFilename());
+//	                Path targetLocation = Paths.get(UPLOAD_DIR, fileName);
+//	                Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
+//
+//	                // Update the image URL in the user object
+//	                String imageUrl = "/uploads/users/" + fileName;
+//	                user.setImage(imageUrl);
+//	            }
+	            
+	         // 2️⃣ If new image uploaded → replace in ImageKit
+	    	    if (file != null && !file.isEmpty()) {
 
-	                // Save the new image
-	                String fileName = System.currentTimeMillis() + "_" + StringUtils.cleanPath(file.getOriginalFilename());
-	                Path targetLocation = Paths.get(UPLOAD_DIR, fileName);
-	                Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
+	    	        // 🔥 delete old image from ImageKit
+	    	        imageKitService.deleteImageByFileId(user.getImageFileId());
 
-	                // Update the image URL in the user object
-	                String imageUrl = "/uploads/users/" + fileName;
-	                user.setImage(imageUrl);
-	            }
+	    	        // 🔥 upload new image
+	    	        ImageUploadResponse res = imageKitService.uploadImage(file, "/users");
+
+	    	        user.setImage(res.getUrl());
+	    	        user.setImageFileId(res.getFileId());
+	    	    }
 
 	            // Update the user profile
 	            UserDto updatedUser = userService.updateProfiles(userDetails, user);
@@ -144,7 +163,9 @@ public class UserController {
         UserDto user = userService.getSingleUser(userId);
 
         // Delete the user's image file
-        deleteOldImage(user.getImage());
+//        deleteOldImage(user.getImage());
+
+        imageKitService.deleteImageByFileId(user.getImageFileId());
 
         // Delete the user
         String msg = userService.deleteUser(userId);
@@ -153,15 +174,15 @@ public class UserController {
 	
 
 	// Helper method to delete old image
-    private void deleteOldImage(String imageUrl) throws IOException {
-        if (imageUrl != null && !imageUrl.isEmpty()) {
-            String fileName = imageUrl.substring(imageUrl.lastIndexOf("/") + 1);
-            Path filePath = Paths.get(UPLOAD_DIR, fileName);
-            if (Files.exists(filePath)) {
-                Files.delete(filePath); // Delete the old image file
-            }
-        }
-    }
+//    private void deleteOldImage(String imageUrl) throws IOException {
+//        if (imageUrl != null && !imageUrl.isEmpty()) {
+//            String fileName = imageUrl.substring(imageUrl.lastIndexOf("/") + 1);
+//            Path filePath = Paths.get(UPLOAD_DIR, fileName);
+//            if (Files.exists(filePath)) {
+//                Files.delete(filePath); // Delete the old image file
+//            }
+//        }
+//    }
     
     
     @PutMapping("/change-password")

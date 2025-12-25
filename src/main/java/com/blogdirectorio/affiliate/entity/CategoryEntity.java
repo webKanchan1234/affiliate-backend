@@ -33,4 +33,5 @@ public class CategoryEntity {
 	@OneToMany(mappedBy = "category", cascade = CascadeType.ALL)
 	private List<ProductEntity> product;
 	private String image;
+	private String imageFileId;
 }

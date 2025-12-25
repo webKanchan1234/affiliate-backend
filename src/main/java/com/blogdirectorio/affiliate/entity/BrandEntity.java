@@ -23,6 +23,7 @@ public class BrandEntity {
 	private String title; // e.g., "Vivo"
 	private String urlName; // e.g., "vivo-mobile"
 	private String image;
+	private String imageFileId;
 	private String description;
 	
 	@ManyToOne

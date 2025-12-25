@@ -23,6 +23,7 @@ public class BrandDto {
 	private String urlName; // e.g., "vivo-mobile"
 	private String description;
 	private String image;
+	private String imageFileId;
 	
 //	private CategoryDto category;
 

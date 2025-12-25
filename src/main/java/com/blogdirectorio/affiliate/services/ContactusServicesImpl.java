@@ -18,14 +18,18 @@ import com.blogdirectorio.affiliate.repository.ContactusRepository;
 @Service
 public class ContactusServicesImpl implements ContactusServices {
 
-	@Autowired
-	private ContactusRepository contactusRepo;
-	
-	@Autowired
-	private ModelMapper modelMapper;
-	
-	@Autowired
-    private JavaMailSender mailSender;
+	private final ContactusRepository contactusRepo;
+    private final ModelMapper modelMapper;
+    private final JavaMailSender mailSender;
+
+    public ContactusServicesImpl(
+            ContactusRepository contactusRepo,
+            ModelMapper modelMapper,
+            JavaMailSender mailSender) {
+        this.contactusRepo = contactusRepo;
+        this.modelMapper = modelMapper;
+        this.mailSender = mailSender;
+    }
 	
 //	
 	@Value("${spring.mail.username}")

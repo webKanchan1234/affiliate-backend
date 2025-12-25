@@ -15,6 +15,7 @@ public class UserDto {
 	private String email;
 	private String password;
 	private String image;
+	private String imageFileId;
 	private String createdAt;
 	private String role="ROLE_USER";
 }

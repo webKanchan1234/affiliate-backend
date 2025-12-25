@@ -28,6 +28,8 @@ import com.blogdirectorio.affiliate.dto.BrandDto;
 import com.blogdirectorio.affiliate.dto.CategoryDto;
 import com.blogdirectorio.affiliate.payloads.ApiResponse;
 import com.blogdirectorio.affiliate.services.BrandServices;
+import com.blogdirectorio.affiliate.utility.ImageKitService;
+import com.blogdirectorio.affiliate.utility.ImageUploadResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -37,6 +39,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @Tag(name = "Brand Controller")
 @CrossOrigin
 public class BrandController {
+	
+	@Autowired
+	private ImageKitService imageKitService;
 
 	@Autowired
 	private BrandServices brandServices;
@@ -52,34 +57,49 @@ public class BrandController {
 		ObjectMapper objectMapper = new ObjectMapper();
 		BrandDto brand = objectMapper.readValue(brandJson, BrandDto.class);
 		
-		File uploadDirectory = new File(UPLOAD_DIR);
-		if (!uploadDirectory.exists()) {
-			uploadDirectory.mkdirs(); 
-		}
+//		File uploadDirectory = new File(UPLOAD_DIR);
+//		if (!uploadDirectory.exists()) {
+//			uploadDirectory.mkdirs(); 
+//		}
+//		
+//
+//		if (!file.isEmpty()) {
+//			// Rename file to avoid duplicates (Optional)
+//			String fileName = System.currentTimeMillis() + "_" + StringUtils.cleanPath(file.getOriginalFilename());
+//			Path targetLocation = Paths.get(UPLOAD_DIR, fileName);
+//
+//			// Save file, replacing existing one if needed
+//			Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
+//
+//			// Store image path
+//			String imageUrl = "/uploads/brands/" + fileName;
+//			brand.setImage(imageUrl);
+//		}
 		
-
-		if (!file.isEmpty()) {
-			// Rename file to avoid duplicates (Optional)
-			String fileName = System.currentTimeMillis() + "_" + StringUtils.cleanPath(file.getOriginalFilename());
-			Path targetLocation = Paths.get(UPLOAD_DIR, fileName);
-
-			// Save file, replacing existing one if needed
-			Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
-
-			// Store image path
-			String imageUrl = "/uploads/brands/" + fileName;
-			brand.setImage(imageUrl);
+		if (file != null && !file.isEmpty()) {
+		    ImageUploadResponse res = imageKitService.uploadImage(file, "/brands");
+		    brand.setImage(res.getUrl());
+		    brand.setImageFileId(res.getFileId());
 		}
 		
 		BrandDto save=this.brandServices.createBrand(brand,categoryId);
 		return new ResponseEntity<>(save,HttpStatus.CREATED);
 	}
 	
+	
+	
+	
+	
+	
 	@GetMapping("/")
 	public ResponseEntity<List<BrandDto>> allBrands(){
 		List<BrandDto> lists=this.brandServices.allBrands();
 		return new ResponseEntity<>(lists,HttpStatus.OK);
 	}
+	
+	
+	
+	
 	
 	@GetMapping("/{brandId}")
 	public ResponseEntity<BrandDto> getBrandById(@RequestParam("brandId") Long brandId){
@@ -88,21 +108,33 @@ public class BrandController {
 	}
 	
 	
+	
+	
+	
 	@DeleteMapping("/{brandId}")
 	@PreAuthorize("hasRole('ADMIN')")
 	public ResponseEntity<ApiResponse> deleteBrand(@PathVariable("brandId") Long brandId) throws IOException {
-	    // Fetch the brand to get the image URL
-		System.out.println(brandId);
+//	    // Fetch the brand to get the image URL
+//		System.out.println(brandId);
 	    BrandDto brand = brandServices.getBrandById(brandId);
+//
+//	    // Delete the brand's image file
+//	    deleteOldImage(brand.getImage());
+		
+		imageKitService.deleteImageByFileId(brand.getImageFileId());
 
-	    // Delete the brand's image file
-	    deleteOldImage(brand.getImage());
 
 	    // Delete the brand
 	    String msg = brandServices.deleteBrand(brandId);
 	    ApiResponse res = new ApiResponse(msg, true);
 	    return new ResponseEntity<>(res, HttpStatus.OK);
 	}
+	
+	
+	
+	
+	
+	
 	
 	/////-------------update start----------------
 	@PutMapping("/{brandId}/category/{categoryId}")
@@ -123,19 +155,31 @@ public class BrandController {
 	    existingBrand.setTitle(brandDto.getTitle());
 	    existingBrand.setUrlName(brandDto.getUrlName());
 
+//	    if (file != null && !file.isEmpty()) {
+//	        // ✅ New image uploaded → delete old image
+//	        deleteOldImage(existingBrand.getImage());
+//
+//	        // ✅ Save new image
+//	        String fileName = System.currentTimeMillis() + "_" + StringUtils.cleanPath(file.getOriginalFilename());
+//	        Path targetLocation = Paths.get(UPLOAD_DIR, fileName);
+//	        Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
+//
+//	        String imageUrl = "/uploads/brands/" + fileName;
+//	        existingBrand.setImage(imageUrl);
+//	    } else {
+//	        // ✅ No new image → keep the old image (already set in existingBrand)
+//	    }
+	    
 	    if (file != null && !file.isEmpty()) {
-	        // ✅ New image uploaded → delete old image
-	        deleteOldImage(existingBrand.getImage());
 
-	        // ✅ Save new image
-	        String fileName = System.currentTimeMillis() + "_" + StringUtils.cleanPath(file.getOriginalFilename());
-	        Path targetLocation = Paths.get(UPLOAD_DIR, fileName);
-	        Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
+	        // 🔥 delete old image from ImageKit
+	        imageKitService.deleteImageByFileId(existingBrand.getImageFileId());
 
-	        String imageUrl = "/uploads/brands/" + fileName;
-	        existingBrand.setImage(imageUrl);
-	    } else {
-	        // ✅ No new image → keep the old image (already set in existingBrand)
+	        // 🔥 upload new image
+	        ImageUploadResponse res = imageKitService.uploadImage(file, "/brands");
+
+	        existingBrand.setImage(res.getUrl());
+	        existingBrand.setImageFileId(res.getFileId());
 	    }
 
 	    // ✅ Update brand in DB
