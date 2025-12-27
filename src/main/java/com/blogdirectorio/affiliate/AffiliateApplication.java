@@ -13,7 +13,7 @@ public class AffiliateApplication extends SpringBootServletInitializer  {
 
 	public static void main(String[] args) {
 		SpringApplication.run(AffiliateApplication.class, args);
-		System.out.println("Affiliate Runnning...");
+		System.out.println("Affiliate Runnning.....");
 	}
 	
 
