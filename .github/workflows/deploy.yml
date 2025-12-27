@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  build-and-deploy:
+  build-and-push:
     runs-on: ubuntu-latest
 
     steps:
@@ -24,16 +24,15 @@ jobs:
           chmod +x mvnw
           ./mvnw clean package -DskipTests
 
+      - name: Login to Docker Hub
+        run: |
+          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login \
+            -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
       - name: Build Docker Image
         run: |
-          docker build -t affiliate-backend:latest .
+          docker build -t kanchankr15153795/affiliate-backend:latest .
 
-      - name: Run Docker Container
+      - name: Push Docker Image to Docker Hub
         run: |
-          docker stop affiliate-backend || true
-          docker rm affiliate-backend || true
-          docker run -d \
-            --name affiliate-backend \
-            -p 8080:8080 \
-            -e SPRING_PROFILES_ACTIVE=local \
-            affiliate-backend:latest
+          docker push kanchankr15153795/affiliate-backend:latest
