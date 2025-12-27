@@ -95,8 +95,8 @@ public class SecurityConfig {
 
         config.setAllowedOrigins(Arrays.asList(
             "http://localhost:3000",
-            "https://99mobiletech.com",
-            "https://www.99mobiletech.com"
+                 "https://99mobiletech.com",
+                 "https://www.99mobiletech.com"
             // If you switch to HTTPS via CloudFront later, also add:
             // "https://your-cloudfront-domain.amazonaws.com"
         ));

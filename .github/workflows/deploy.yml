@@ -28,12 +28,10 @@ jobs:
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
       - name: Build Docker Image
-        run: |
-          docker build -t kanchankr/affiliate-backend:latest .
+        run: docker build -t kanchankr/affiliate-backend:latest .
 
       - name: Push Docker Image
-        run: |
-          docker push kanchankr/affiliate-backend:latest
+        run: docker push kanchankr/affiliate-backend:latest
 
       - name: Deploy on EC2 via SSH
         uses: appleboy/ssh-action@v1.0.0
@@ -47,6 +45,7 @@ jobs:
             docker rm affiliate-backend || true
             docker run -d \
               --name affiliate-backend \
+              --restart unless-stopped \
+              --env-file /home/ubuntu/affiliate-prod.env \
               -p 8080:8080 \
-              -e SPRING_PROFILES_ACTIVE=prod \
               kanchankr/affiliate-backend:latest
