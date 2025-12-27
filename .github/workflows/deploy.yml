@@ -31,8 +31,8 @@ jobs:
 
       - name: Build Docker Image
         run: |
-          docker build -t kanchankr15153795/affiliate-backend:latest .
+          docker build -t kanchankr/affiliate-backend:latest .
 
       - name: Push Docker Image to Docker Hub
         run: |
-          docker push kanchankr15153795/affiliate-backend:latest
+          docker push kanchankr/affiliate-backend:latest
